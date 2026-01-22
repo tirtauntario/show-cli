@@ -1,0 +1,17 @@
+.DS_Store
+Thumbs.db
+._*
+.Spotlight-V100
+.Trashes
+
+bin/
+dist/
+build/
+
+*.log
+*.tmp
+*.swp
+*.swo
+
+.env
+.env.*
