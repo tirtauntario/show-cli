@@ -4,22 +4,31 @@ Display text files with syntax highlighting and line numbers.
 
 show-cli is a small, fast CLI written in Go. It highlights source code via Chroma, adds locale-aware line numbers (UTF‑8 `│` or ASCII `|`), supports themes and explicit filetype selection, provides shell completions, and offers a debug mode to show detected file type metadata.
 
+[![Go Version](https://img.shields.io/badge/Go-1.22%2B-2CA5E0?logo=go)](#installation)
+[![Tests](https://img.shields.io/badge/Tests-passing-brightgreen)](#development)
+[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+
 ## Table of Contents
 
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Options](#options)
-- [Supported File Types](#supported-file-types)
-- [Examples](#examples)
-- [Shell Completion](#shell-completion)
-- [Environment Variables](#environment-variables)
-- [Configuration](#configuration)
-- [Build & Versioning](#build--versioning)
-- [Development](#development)
-- [Contributing](#contributing)
-- [Help Wanted / Roadmap](#help-wanted--roadmap)
-- [Acknowledgements](#acknowledgements)
+- [show-cli](#show-cli)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Options](#options)
+  - [Supported File Types](#supported-file-types)
+  - [Examples](#examples)
+  - [Shell Completion](#shell-completion)
+    - [Bash](#bash)
+    - [Zsh](#zsh)
+    - [Fish](#fish)
+  - [Environment Variables](#environment-variables)
+  - [Configuration](#configuration)
+  - [Build \& Versioning](#build-versioning)
+  - [Development](#development)
+  - [Contributing](#contributing)
+  - [Help Wanted / Roadmap](#help-wanted-roadmap)
+  - [Acknowledgements](#acknowledgements)
 
 ## Features
 
