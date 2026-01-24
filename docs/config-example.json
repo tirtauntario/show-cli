@@ -1,0 +1,16 @@
+{
+    "theme": "onedark",
+    "filetype": "",
+    "debug": false,
+    "line_numbers": true,
+    "line_start": 1,
+    "line_separator": "",
+    "__help": {
+        "theme": "Run 'show --list-themes' to see available names. Default is 'onedark'.",
+        "filetype": "Chroma lexer alias (e.g., go, python, yaml). Leave empty to auto-detect from file extension.",
+        "debug": "Boolean: true/false. When true, prints header/footer with detected file type.",
+        "line_numbers": "Boolean: true to show line numbers, false to disable.",
+        "line_start": "Integer starting line number (>= 1). Defaults to 1.",
+        "line_separator": "Override separator between number and content. Typical values: '│' (UTF-8) or '|' (ASCII). Empty uses locale-based default."
+    }
+}

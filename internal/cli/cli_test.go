@@ -194,3 +194,18 @@ func TestRunShowTheme(t *testing.T) {
 		t.Fatalf("expected content output, got %q", out.String())
 	}
 }
+
+func TestRunPrintConfigPath(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	app := New(show.Deps{FileReader: stubFileReader{data: []byte("ok")}}, BuildInfo{}, &out, &errOut)
+
+	err := app.Run([]string{"--print-config-path"})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	got := strings.TrimSpace(out.String())
+	if got == "" {
+		t.Fatalf("expected non-empty output for print-config-path")
+	}
+}

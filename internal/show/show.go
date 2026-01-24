@@ -30,6 +30,7 @@ type ShowOptions struct {
 	FileType string
 	Theme    string
 	Debug    bool
+	LineNumbers LineNumberOptions
 }
 
 type ShowResult struct {
@@ -58,7 +59,12 @@ func RunShow(ctx context.Context, deps Deps, opts ShowOptions) (ShowResult, erro
 		return ShowResult{}, fmt.Errorf("highlight content: %w", err)
 	}
 
-	content = addLineNumbers(highlighted)
+	// Apply line number rendering based on options; default enabled
+	if opts.LineNumbers.Disabled {
+		content = highlighted
+	} else {
+		content = addLineNumbersWithOptions(highlighted, opts.LineNumbers)
+	}
 	if opts.Debug {
 		content = wrapWithDebugFileType(opts.Path, data, content)
 	}
@@ -133,6 +139,70 @@ func addLineNumbers(input string) string {
 	return b.String()
 }
 
+// LineNumberOptions configures how line numbers are rendered.
+type LineNumberOptions struct {
+	// Disabled skips rendering line numbers entirely.
+	Disabled bool
+	// Start is the starting line number (defaults to 1 when <= 0).
+	Start int
+	// Separator overrides the glyph printed between number and content.
+	// When empty, a locale-aware separator is used.
+	Separator string
+}
+
+// addLineNumbersWithOptions renders line numbers honoring LineNumberOptions.
+func addLineNumbersWithOptions(input string, ln LineNumberOptions) string {
+	if input == "" {
+		return ""
+	}
+
+	start := ln.Start
+	if start <= 0 {
+		start = 1
+	}
+	width := lineNumberWidthWithStart(input, start)
+	var b strings.Builder
+	reader := bufio.NewReader(strings.NewReader(input))
+	lineNum := start
+	lineStarted := false
+	sep := ln.Separator
+	if sep == "" {
+		sep = lineSeparator()
+	}
+	reset := "\x1b[0m"
+	white := "\x1b[37m"
+	useColor := !noColor()
+	for {
+		line, err := reader.ReadString('\n')
+		if line != "" {
+			if errors.Is(err, io.EOF) && !strings.HasSuffix(line, "\n") {
+				b.WriteString(line)
+				break
+			}
+			if !lineStarted {
+				if useColor {
+					fmt.Fprintf(&b, "%s%s%*d %s%s ", reset, white, width, lineNum, sep, reset)
+				} else {
+					fmt.Fprintf(&b, "%*d %s ", width, lineNum, sep)
+				}
+				lineStarted = true
+			}
+			b.WriteString(line)
+			if strings.HasSuffix(line, "\n") {
+				lineNum++
+				lineStarted = false
+			}
+		}
+		if errors.Is(err, bufio.ErrBufferFull) {
+			continue
+		}
+		if errors.Is(err, io.EOF) || err != nil {
+			break
+		}
+	}
+	return b.String()
+}
+
 func lineSeparator() string {
 	if isUTF8Locale() {
 		return "│"
@@ -167,4 +237,31 @@ func lineNumberWidth(input string) int {
 		lines = 1
 	}
 	return len(strconv.Itoa(lines))
+}
+
+// lineNumberWidthWithStart computes width considering a custom starting number.
+func lineNumberWidthWithStart(input string, start int) int {
+	if input == "" {
+		return len(strconv.Itoa(max(1, start)))
+	}
+	lines := strings.Count(input, "\n")
+	if !strings.HasSuffix(input, "\n") {
+		lines++
+	}
+	if lines == 0 {
+		lines = 1
+	}
+	maxLine := start
+	if maxLine <= 0 {
+		maxLine = 1
+	}
+	maxLine += lines - 1
+	return len(strconv.Itoa(maxLine))
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

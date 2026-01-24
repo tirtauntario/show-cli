@@ -23,6 +23,7 @@ type CLI struct {
 	info   BuildInfo
 	out    io.Writer
 	errOut io.Writer
+	config UserConfig
 }
 
 func New(deps show.Deps, info BuildInfo, out io.Writer, errOut io.Writer) *CLI {
@@ -75,12 +76,12 @@ func (c *CLI) Run(args []string) error {
 				Name:  "install-completion",
 				Usage: "print shell completion script (bash|zsh|fish)",
 			},
+			&cli.BoolFlag{
+				Name:  "print-config-path",
+				Usage: "print resolved config file path and exit",
+			},
 		},
 		Action: func(ctx *cli.Context) error {
-			if ctx.Bool("help") || ctx.Bool("h") {
-				cli.ShowAppHelp(ctx)
-				return nil
-			}
 			if ctx.Bool("version") || ctx.Bool("v") {
 				c.printVersion()
 				return nil
@@ -94,11 +95,21 @@ func (c *CLI) Run(args []string) error {
 			if ctx.Bool("list-themes") {
 				return c.runListThemes()
 			}
+			if ctx.Bool("print-config-path") {
+				return c.runPrintConfigPath()
+			}
 			return c.runShow(ctx)
 		},
 	}
 
 	argv := append([]string{"show"}, normalizeArgs(args)...)
+
+	// Load config and apply environment defaults prior to running the app.
+	if cfg, err := LoadUserConfig(); err == nil {
+		ApplyEnv(&cfg)
+		c.config = cfg
+	}
+
 	return app.Run(argv)
 }
 
@@ -121,12 +132,31 @@ func (c *CLI) runShow(ctx *cli.Context) error {
 	}
 
 	opts := show.ShowOptions{Path: ctx.Args().Get(0)}
+
+	// Precedence: flags > env > config
 	opts.FileType = ctx.String("filetype")
 	if opts.FileType == "" {
 		opts.FileType = ctx.String("t")
 	}
+	if opts.FileType == "" && c.config.Filetype != "" {
+		opts.FileType = c.config.Filetype
+	}
 	opts.Theme = ctx.String("theme")
-	opts.Debug = ctx.Bool("debug") || ctx.Bool("d")
+	if opts.Theme == "" && c.config.Theme != "" {
+		opts.Theme = c.config.Theme
+	}
+	opts.Debug = (ctx.Bool("debug") || ctx.Bool("d")) || c.config.Debug
+
+	// Line number options from config (no flags yet). Defaults: enabled, start=1, separator=auto.
+	if c.config.LineNumbers != nil && !*c.config.LineNumbers {
+		opts.LineNumbers.Disabled = true
+	}
+	if c.config.LineStart > 0 {
+		opts.LineNumbers.Start = c.config.LineStart
+	}
+	if c.config.LineSeparator != "" {
+		opts.LineNumbers.Separator = c.config.LineSeparator
+	}
 	result, err := show.RunShow(context.Background(), c.deps, opts)
 	if err != nil {
 		return err
@@ -197,6 +227,16 @@ func (c *CLI) runListThemes() error {
 		}
 	}
 	return nil
+}
+
+func (c *CLI) runPrintConfigPath() error {
+	path := ConfigPath()
+	if path == "" {
+		_, err := io.WriteString(c.out, "(no default config path resolved)\n")
+		return err
+	}
+	_, err := io.WriteString(c.out, path+"\n")
+	return err
 }
 
 func completionScript(shell string) (string, error) {
