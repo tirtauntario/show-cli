@@ -78,12 +78,10 @@ func (c *CLI) Run(args []string) error {
 		},
 		Action: func(ctx *cli.Context) error {
 			if ctx.Bool("help") || ctx.Bool("h") {
-				cli.ShowAppHelp(ctx)
-				return nil
+				return cli.ShowAppHelp(ctx)
 			}
 			if ctx.Bool("version") || ctx.Bool("v") {
-				c.printVersion()
-				return nil
+				return c.printVersion()
 			}
 			if ctx.IsSet("install-completion") {
 				return c.runCompletion(ctx.String("install-completion"))
@@ -171,14 +169,17 @@ func flagNeedsValue(arg string) bool {
 	}
 }
 
-func (c *CLI) printVersion() {
-	fmt.Fprintf(c.out, "version: %s\n", c.info.Version)
+func (c *CLI) printVersion() error {
+	var b strings.Builder
+	fmt.Fprintf(&b, "version: %s\n", c.info.Version)
 	if c.info.Commit != "" {
-		fmt.Fprintf(c.out, "commit: %s\n", c.info.Commit)
+		fmt.Fprintf(&b, "commit: %s\n", c.info.Commit)
 	}
 	if c.info.Date != "" {
-		fmt.Fprintf(c.out, "date: %s\n", c.info.Date)
+		fmt.Fprintf(&b, "date: %s\n", c.info.Date)
 	}
+	_, err := io.WriteString(c.out, b.String())
+	return err
 }
 
 func (c *CLI) runSupportedTypes() error {

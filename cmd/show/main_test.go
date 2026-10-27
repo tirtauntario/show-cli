@@ -22,10 +22,10 @@ func captureStdout(t *testing.T) (*bytes.Buffer, func()) {
 	os.Stdout = w
 	buf := &bytes.Buffer{}
 	return buf, func() {
-		w.Close()
+		_ = w.Close()
 		os.Stdout = old
 		_, _ = io.Copy(buf, r)
-		r.Close()
+		_ = r.Close()
 	}
 }
 
