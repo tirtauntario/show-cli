@@ -9,7 +9,7 @@ scope. `show` is meant to stay small.
 
 ## Setup
 
-You need Go 1.22 or newer. For linting, install
+You need Go 1.26 or newer. For linting, install
 [golangci-lint](https://golangci-lint.run/welcome/install/) v2.
 
 ```sh

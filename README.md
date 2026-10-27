@@ -19,7 +19,7 @@ line numbers, and exits.
 
 ## Install
 
-With Go 1.22 or newer:
+With Go 1.26 or newer:
 
 ```sh
 go install github.com/tirtauntario/show-cli/cmd/show@latest
