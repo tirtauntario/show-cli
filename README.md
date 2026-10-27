@@ -1,166 +1,116 @@
-# show-cli
+# show
 
-Display text files with syntax highlighting and line numbers.
+[![CI](https://github.com/tirtauntario/show-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/tirtauntario/show-cli/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/tirtauntario/show-cli)](https://github.com/tirtauntario/show-cli/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tirtauntario/show-cli.svg)](https://pkg.go.dev/github.com/tirtauntario/show-cli)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#license)
 
-show-cli is a small, fast CLI written in Go that:
-- Highlights source code via Chroma
-- Adds locale-aware line numbers (UTF‑8 `│` or ASCII `|`)
-- Supports themes and explicit filetype selection
-- Provides shell completions for Bash/Zsh/Fish
-- Offers a debug mode to show detected file type metadata
+`show <file>` prints a source file with syntax highlighting and line numbers,
+then exits.
+
+![show printing a Go file with syntax highlighting and line numbers](docs/screenshot.png)
 
 ## Why
 
 Sometimes I only want to read one source file, and starting Neovim for that
-is more than I need. `cat` prints it without colour. `show` prints it with
+is more than I need. `cat` prints it without color. `show` prints it with
 syntax highlighting picked automatically from the file name or contents, adds
 line numbers, and exits.
 
-## Features
+## Install
 
-- Syntax highlighting with Chroma (auto-detect by path/content, or override with `--filetype`).
-- Terminal formatter fallback: prefers 24-bit (`terminal16m`), then 256-color, then plain.
-- Themes: choose from Chroma styles; defaults to `onedark`.
-- Line numbers: fixed-width prefixes with locale-dependent separator.
-- Deterministic output toggles for tests via environment variables.
+With Go 1.22 or newer:
 
-## Installation
-
-Prerequisites: Go 1.22+
-
-Build from source:
-
-```bash
-make build
-# or
-go build -o bin/show ./cmd/show
+```sh
+go install github.com/tirtauntario/show-cli/cmd/show@latest
 ```
 
-Run:
+Or download a prebuilt binary for Linux, macOS or Windows (amd64 and arm64)
+from the [Releases](https://github.com/tirtauntario/show-cli/releases) page.
+For example, on Linux x86_64:
 
-```bash
-bin/show --help
+```sh
+curl -fsSL https://github.com/tirtauntario/show-cli/releases/latest/download/show_linux_amd64.tar.gz | tar -xz show
+sudo mv show /usr/local/bin/
+```
+
+Replace `linux_amd64` with `darwin_arm64`, `darwin_amd64` or `linux_arm64` as
+needed. Windows builds are `.zip` files.
+
+Or build from source:
+
+```sh
+git clone https://github.com/tirtauntario/show-cli.git
+cd show-cli
+make build        # writes bin/show
 ```
 
 ## Usage
 
-```bash
-show <path>
+```sh
+show main.go                      # highlight by file name
+show -t yaml config.example       # force a file type when the name does not tell
+show --theme github-dark main.go  # pick another theme
+show main.go | less -R            # page through a long file
+show --list-themes                # see the available themes
 ```
+
+The file type is detected from the file name, then from the contents. Output
+always contains ANSI color codes, also when piped, so use `less -R` to page.
 
 ## Options
 
-- `-h`, `--help`: show help
-- `-v`, `--version`: print version
-- `-d`, `--debug`: print debug file type metadata (header + footer)
-- `-t`, `--filetype <type>`: force syntax highlighting file type (lexer alias)
-- `--theme <name>`: set syntax highlighting theme (default: `onedark`)
-- `--list-file-types`: print supported file type aliases (one per line)
-- `--list-themes`: print supported syntax highlighting themes (one per line)
-- `--install-completion <bash|zsh|fish>`: print shell completion script
+| Flag | Description |
+| --- | --- |
+| `-t`, `--filetype <type>` | Force the file type, for example `go`, `python`, `yaml`. See `--list-file-types`. |
+| `--theme <name>` | Set the color theme. Default: `onedark`. See `--list-themes`. |
+| `-d`, `--debug` | Print the detected file type above and below the output. |
+| `--list-file-types` | Print every value `--filetype` accepts, one per line. |
+| `--list-themes` | Print every theme name, one per line. |
+| `--install-completion <shell>` | Print a completion script for `bash`, `zsh` or `fish`. |
+| `-v`, `--version` | Print the version. |
+| `-h`, `--help` | Show help. |
 
-## Supported File Types
+Flags can go before or after the file name. Highlighting and themes come from
+[Chroma](https://github.com/alecthomas/chroma), so any Chroma lexer or style
+name works.
 
-These are Chroma lexer aliases (lowercase). For the full, up-to-date list:
+## Shell completion
 
-```bash
-bin/show --list-file-types
-```
+```sh
+# Bash
+show --install-completion bash > ~/.local/share/bash-completion/completions/show
 
-Common aliases include:
-- go, python, javascript, typescript
-- yaml, json, toml, ini
-- bash, fish, zsh, powershell
-- markdown, rst, html, css
-- sql, dockerfile, make, terraform, hcl
-- php, ruby, java, kotlin, swift
-- c, cpp, rust
+# Zsh (any directory in your $fpath)
+show --install-completion zsh > "${fpath[1]}/_show"
 
-## Examples
-
-```bash
-show README.md
-show --debug README.md
-show --filetype go main.txt
-show --theme github-dark README.md
-show --list-file-types
-show --list-themes
-NO_COLOR=1 show README.md
-```
-
-## Shell Completion
-
-### Bash
-
-```bash
-show --install-completion bash > /etc/bash_completion.d/show
-```
-
-### Zsh
-
-```bash
-show --install-completion zsh > ${fpath[1]}/_show
-```
-
-### Fish
-
-```bash
+# Fish
 show --install-completion fish > ~/.config/fish/completions/show.fish
 ```
 
-## Environment Variables
-- `NO_COLOR=1`: disable colored line-number prefixes (syntax highlighting may still emit ANSI).
-- `LC_ALL`, `LC_CTYPE`, `LANG`: if any indicates UTF‑8, uses `│` as the line separator; otherwise uses `|`.
+## Environment variables
 
-## Build & Versioning
-Inject build metadata with `ldflags`:
+| Variable | Effect |
+| --- | --- |
+| `NO_COLOR` | When set to a non-empty value, line numbers are printed without color. The code itself is still highlighted. |
+| `LC_ALL`, `LC_CTYPE`, `LANG` | If any of them mentions UTF-8, the line number separator is `│`. Otherwise it is `\|`. |
 
-```bash
-go build -ldflags "-X main.version=v0.1.0 -X main.commit=$(git rev-parse --short HEAD) -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o bin/show ./cmd/show
-```
+## Roadmap
 
-Runtime flags:
+- Read defaults such as the theme from `~/.config/show/config.yaml`.
+- A Homebrew formula.
 
-```bash
-bin/show --version
-```
-
-## Development
-
-Run locally:
-
-```bash
-go run ./cmd/show --help
-```
-
-Run tests:
-
-```bash
-go test ./...
-```
+Open an issue if you want to work on one of these.
 
 ## Contributing
-Contributions are welcome! Please:
-- Keep changes focused and well-tested (`go test ./...`).
-- Follow existing patterns (dependency injection via `show.Deps`, CLI surface in `internal/cli`, core logic in `internal/show`).
-- Discuss significant changes via an issue or PR description.
-- Use Conventional Commit message as possible
 
-## Help Wanted / Roadmap
-We’re seeking contributors to help with the following:
-- Documentation: refine and expand this README and usage examples.
-- `~/.config` support: load default settings (e.g., theme, line number options) from a user config (proposed path: `~/.config/show/config.yaml`).
-- Cross-platform binaries: build and publish release artifacts for Linux, macOS, and Windows (e.g., via GoReleaser).
-- Homebrew packaging: submit and maintain a formula (tap or Homebrew/core) once release binaries exist.
-- Bug tracking: file and triage issues with clear reproduction steps; propose fixes via small PRs.
-- CI/CD: set up pipelines for tests, lint, and build (e.g., GitHub Actions), including release workflows.
-
-If you’re interested, please open an issue describing what you’d like to tackle, and we can coordinate on scope and approach.
+Bug reports and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for setup, tests and the release process.
 
 ## Acknowledgements
-- CLI framework: `github.com/urfave/cli/v2`
-- Syntax highlighting: `github.com/alecthomas/chroma/v2`
-- Conventional Commit: `https://www.conventionalcommits.org/en/v1.0.0/`
+
+- Syntax highlighting: [Chroma](https://github.com/alecthomas/chroma)
+- CLI framework: [urfave/cli](https://github.com/urfave/cli)
 
 ## License
 
