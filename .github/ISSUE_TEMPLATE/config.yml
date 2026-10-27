@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/tirtauntario/show-cli/discussions
+    about: Ask and answer questions in GitHub Discussions.
+  - name: Report a security vulnerability
+    url: https://github.com/tirtauntario/show-cli/security/advisories/new
+    about: Please report security issues privately.

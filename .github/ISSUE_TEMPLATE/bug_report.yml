@@ -1,0 +1,46 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security vulnerabilities here. See SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: show version
+      description: Output of `show --version`
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS and architecture
+      placeholder: macOS 15, arm64
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal and shell
+      placeholder: iTerm2 3.5, zsh 5.9
+  - type: input
+    id: locale
+    attributes:
+      label: Locale
+      description: Output of `echo $LANG $LC_ALL`, if the problem is about line numbers or characters
+  - type: input
+    id: command
+    attributes:
+      label: Command you ran
+      placeholder: show --theme github-dark main.go
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: A screenshot helps for display problems. Attach the file or a small sample if you can.
+    validations:
+      required: true
