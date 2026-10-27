@@ -9,6 +9,13 @@ show-cli is a small, fast CLI written in Go that:
 - Provides shell completions for Bash/Zsh/Fish
 - Offers a debug mode to show detected file type metadata
 
+## Why
+
+Sometimes I only want to read one source file, and starting Neovim for that
+is more than I need. `cat` prints it without colour. `show` prints it with
+syntax highlighting picked automatically from the file name or contents, adds
+line numbers, and exits.
+
 ## Features
 
 - Syntax highlighting with Chroma (auto-detect by path/content, or override with `--filetype`).
