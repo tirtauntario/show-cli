@@ -59,6 +59,11 @@ func (c *CLI) Run(args []string) error {
 				Aliases: []string{"version"},
 				Usage:   "print version",
 			},
+			&cli.IntFlag{
+				Name:  "tab-width",
+				Value: 4,
+				Usage: "expand tabs to this many columns (0 keeps tabs)",
+			},
 			&cli.StringFlag{
 				Name:  "theme",
 				Usage: "set syntax highlighting theme (default: onedark, see --list-themes)",
@@ -125,6 +130,7 @@ func (c *CLI) runShow(ctx *cli.Context) error {
 	}
 	opts.Theme = ctx.String("theme")
 	opts.Debug = ctx.Bool("debug") || ctx.Bool("d")
+	opts.TabWidth = ctx.Int("tab-width")
 	result, err := show.RunShow(context.Background(), c.deps, opts)
 	if err != nil {
 		return err
@@ -162,7 +168,7 @@ func normalizeArgs(args []string) []string {
 
 func flagNeedsValue(arg string) bool {
 	switch arg {
-	case "-t", "--filetype", "--install-completion", "--theme":
+	case "-t", "--filetype", "--install-completion", "--theme", "--tab-width":
 		return true
 	default:
 		return false
@@ -218,7 +224,7 @@ func bashCompletion() string {
 _show() {
   local cur opts
   cur="${COMP_WORDS[COMP_CWORD]}"
-  opts="-h --help -v --version -d --debug -t --filetype --theme --list-file-types --list-themes --install-completion"
+  opts="-h --help -v --version -d --debug -t --filetype --tab-width --theme --list-file-types --list-themes --install-completion"
   if [[ "$cur" == -* ]]; then
     COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
     return 0
@@ -241,6 +247,7 @@ _arguments \
   '--debug[print debug metadata]' \
   '-t[force syntax highlighting file type]:type:' \
   '--filetype[force syntax highlighting file type]:type:' \
+  '--tab-width[expand tabs to this many columns]:width:' \
   '--theme[set syntax highlighting theme]:theme:' \
   '--list-file-types[print supported file type aliases]' \
   '--list-themes[print supported syntax highlighting themes]' \
@@ -259,6 +266,7 @@ complete -c show -s d -d "print debug metadata"
 complete -c show -l debug -d "print debug metadata"
 complete -c show -s t -d "force syntax highlighting file type"
 complete -c show -l filetype -d "force syntax highlighting file type"
+complete -c show -l tab-width -x -d "expand tabs to this many columns"
 complete -c show -l theme -d "set syntax highlighting theme"
 complete -c show -l list-file-types -d "print supported file type aliases"
 complete -c show -l list-themes -d "print supported syntax highlighting themes"

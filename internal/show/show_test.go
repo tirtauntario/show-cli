@@ -130,3 +130,50 @@ func TestNoColor(t *testing.T) {
 		}
 	})
 }
+
+func TestExpandTabs(t *testing.T) {
+	tests := []struct {
+		name  string
+		in    string
+		width int
+		want  string
+	}{
+		{"leading tab", "\tx\n", 4, "    x\n"},
+		{"two tabs", "\t\tx\n", 4, "        x\n"},
+		{"tab after text", "ab\tc\n", 4, "ab  c\n"},
+		{"tab at stop", "abcd\te", 4, "abcd    e"},
+		{"resets per line", "a\tb\n\tc\n", 4, "a   b\n    c\n"},
+		{"width 8", "\tx", 8, "        x"},
+		{"width 0 keeps tabs", "\tx\n", 0, "\tx\n"},
+		{"multibyte runes count once", "é\tx", 4, "é   x"},
+		{"crlf", "\tx\r\n\ty\r\n", 2, "  x\r\n  y\r\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := expandTabs(tt.in, tt.width); got != tt.want {
+				t.Fatalf("expandTabs(%q, %d) = %q, want %q", tt.in, tt.width, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRunShowExpandsTabs(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("LC_ALL", "C")
+	t.Setenv("LC_CTYPE", "C")
+	t.Setenv("LANG", "C")
+
+	deps := Deps{FileReader: stubReader{data: []byte("func f() {\n\treturn\n}\n")}}
+	result, err := RunShow(context.Background(), deps, ShowOptions{Path: "main.go", TabWidth: 4})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if strings.Contains(string(result.Content), "\t") {
+		t.Fatalf("expected no tabs in output, got %q", result.Content)
+	}
+
+	_, err = RunShow(context.Background(), deps, ShowOptions{Path: "main.go", TabWidth: -1})
+	if err == nil || !strings.Contains(err.Error(), "invalid tab width") {
+		t.Fatalf("expected invalid tab width error, got %v", err)
+	}
+}

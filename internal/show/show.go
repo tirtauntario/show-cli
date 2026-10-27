@@ -30,6 +30,9 @@ type ShowOptions struct {
 	FileType string
 	Theme    string
 	Debug    bool
+	// TabWidth expands tabs to stops every TabWidth columns, counted from the
+	// start of each line of the file. 0 keeps tabs as they are.
+	TabWidth int
 }
 
 type ShowResult struct {
@@ -43,6 +46,9 @@ func RunShow(ctx context.Context, deps Deps, opts ShowOptions) (ShowResult, erro
 	if deps.FileReader == nil {
 		return ShowResult{}, errors.New("file reader is required")
 	}
+	if opts.TabWidth < 0 {
+		return ShowResult{}, fmt.Errorf("invalid tab width: %d", opts.TabWidth)
+	}
 	if opts.Theme != "" && !IsSupportedTheme(opts.Theme) {
 		return ShowResult{}, fmt.Errorf("unknown theme: %s", opts.Theme)
 	}
@@ -52,7 +58,7 @@ func RunShow(ctx context.Context, deps Deps, opts ShowOptions) (ShowResult, erro
 		return ShowResult{}, fmt.Errorf("read file: %w", err)
 	}
 
-	content := string(data)
+	content := expandTabs(string(data), opts.TabWidth)
 	highlighted, err := highlightContent(opts.Path, content, opts.FileType, opts.Theme)
 	if err != nil {
 		return ShowResult{}, fmt.Errorf("highlight content: %w", err)
@@ -86,6 +92,33 @@ func wrapWithDebugFileType(path string, data []byte, content string) string {
 
 func detectFileType(path string, data []byte) string {
 	return detectFileTypeFromExtension(path)
+}
+
+// expandTabs replaces each tab with spaces up to the next multiple of width,
+// measuring columns in runes from the start of each line. This runs before
+// highlighting, so the line-number prefix does not shift the tab stops.
+func expandTabs(input string, width int) string {
+	if width <= 0 || !strings.Contains(input, "\t") {
+		return input
+	}
+	var b strings.Builder
+	b.Grow(len(input))
+	col := 0
+	for _, r := range input {
+		switch r {
+		case '\t':
+			n := width - col%width
+			b.WriteString(strings.Repeat(" ", n))
+			col += n
+		case '\n':
+			b.WriteRune(r)
+			col = 0
+		default:
+			b.WriteRune(r)
+			col++
+		}
+	}
+	return b.String()
 }
 
 func addLineNumbers(input string) string {

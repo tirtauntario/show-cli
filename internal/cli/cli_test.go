@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -192,5 +193,34 @@ func TestRunShowTheme(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "hello") {
 		t.Fatalf("expected content output, got %q", out.String())
+	}
+}
+
+var ansi = regexp.MustCompile("\x1b\\[[0-9;]*m")
+
+func TestRunShowTabWidth(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("LC_ALL", "C")
+	t.Setenv("LC_CTYPE", "C")
+	t.Setenv("LANG", "C")
+
+	run := func(args ...string) string {
+		t.Helper()
+		var out, errOut bytes.Buffer
+		app := New(show.Deps{FileReader: stubFileReader{data: []byte("\tx\n")}}, BuildInfo{}, &out, &errOut)
+		if err := app.Run(args); err != nil {
+			t.Fatalf("Run(%q): %v", args, err)
+		}
+		return ansi.ReplaceAllString(out.String(), "")
+	}
+
+	if got := run("test.txt"); !strings.Contains(got, "|     x") {
+		t.Fatalf("expected default tab width 4, got %q", got)
+	}
+	if got := run("--tab-width", "2", "test.txt"); !strings.Contains(got, "|   x") || strings.Contains(got, "|     x") {
+		t.Fatalf("expected tab width 2, got %q", got)
+	}
+	if got := run("test.txt", "--tab-width=0"); !strings.Contains(got, "\tx") {
+		t.Fatalf("expected raw tab, got %q", got)
 	}
 }
