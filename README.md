@@ -161,3 +161,13 @@ If you’re interested, please open an issue describing what you’d like to tac
 - CLI framework: `github.com/urfave/cli/v2`
 - Syntax highlighting: `github.com/alecthomas/chroma/v2`
 - Conventional Commit: `https://www.conventionalcommits.org/en/v1.0.0/`
+
+## License
+
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
+[MIT license](LICENSE-MIT), at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally
+submitted for inclusion in this work by you, as defined in the Apache-2.0
+license, shall be dual licensed as above, without any additional terms or
+conditions.
