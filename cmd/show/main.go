@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"show-cli/internal/cli"
-	"show-cli/internal/show"
+	"github.com/tirtauntario/show-cli/internal/cli"
+	"github.com/tirtauntario/show-cli/internal/show"
 )
 
 var (

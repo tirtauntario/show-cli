@@ -1,4 +1,4 @@
-module show-cli
+module github.com/tirtauntario/show-cli
 
 go 1.22
 

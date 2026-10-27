@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"show-cli/internal/show"
+	"github.com/tirtauntario/show-cli/internal/show"
 )
 
 type stubFileReader struct {

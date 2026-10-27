@@ -9,7 +9,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"show-cli/internal/show"
+	"github.com/tirtauntario/show-cli/internal/show"
 )
 
 type BuildInfo struct {
