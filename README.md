@@ -48,22 +48,25 @@ make build        # writes bin/show
 ## Usage
 
 ```sh
-show main.go                      # highlight by file name
-show -t yaml config.example       # force a file type when the name does not tell
-show --theme github-dark main.go  # pick another theme
-show main.go | less -R            # page through a long file
-show --list-themes                # see the available themes
+show main.go                           # highlight by file name
+show -t yaml config.example            # force a file type when the name does not tell
+show --theme github-dark main.go       # pick another theme
+show --color always main.go | less -R  # keep color when paging
+show --list-themes                     # see the available themes
 ```
 
-The file type is detected from the file name, then from the contents. Output
-always contains ANSI color codes, also when piped, so use `less -R` to page.
+The file type is detected from the file name, then from the contents. Color
+is on when the output is a terminal. When you pipe or redirect the output, it
+is plain text with line numbers, unless you pass `--color always`.
 
 ## Options
 
 | Flag | Description |
 | --- | --- |
 | `-t`, `--filetype <type>` | Force the file type, for example `go`, `python`, `yaml`. See `--list-file-types`. |
+| `--color <when>` | `auto` (default), `always` or `never`. `auto` colors only when the output is a terminal and `NO_COLOR` is not set. `never` prints plain text. |
 | `--theme <name>` | Set the color theme. Default: `onedark`. See `--list-themes`. |
+| `--tab-width <n>` | Expand tabs to `n` columns, counted from the start of each line. Default: `4`. `0` keeps tabs as they are. |
 | `-d`, `--debug` | Print the detected file type above and below the output. |
 | `--list-file-types` | Print every value `--filetype` accepts, one per line. |
 | `--list-themes` | Print every theme name, one per line. |
@@ -92,7 +95,7 @@ show --install-completion fish > ~/.config/fish/completions/show.fish
 
 | Variable | Effect |
 | --- | --- |
-| `NO_COLOR` | When set to a non-empty value, line numbers are printed without color. The code itself is still highlighted. |
+| `NO_COLOR` | When set to a non-empty value, `--color auto` prints plain text. `--color always` still colors. See [no-color.org](https://no-color.org). |
 | `LC_ALL`, `LC_CTYPE`, `LANG` | If any of them mentions UTF-8, the line number separator is `│`. Otherwise it is `\|`. |
 
 ## Roadmap
