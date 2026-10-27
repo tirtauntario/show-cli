@@ -1,6 +1,7 @@
 package show
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -17,35 +18,35 @@ func (s stubReader) ReadFile(string) ([]byte, error) {
 
 func TestRunShowErrors(t *testing.T) {
 	t.Run("missing path", func(t *testing.T) {
-		_, err := RunShow(t.Context(), Deps{FileReader: stubReader{data: []byte("ok")}}, ShowOptions{})
+		_, err := RunShow(context.Background(), Deps{FileReader: stubReader{data: []byte("ok")}}, ShowOptions{})
 		if err == nil || err.Error() != "path is required" {
 			t.Fatalf("expected path error, got %v", err)
 		}
 	})
 
 	t.Run("missing file reader", func(t *testing.T) {
-		_, err := RunShow(t.Context(), Deps{}, ShowOptions{Path: "file.txt"})
+		_, err := RunShow(context.Background(), Deps{}, ShowOptions{Path: "file.txt"})
 		if err == nil || err.Error() != "file reader is required" {
 			t.Fatalf("expected file reader error, got %v", err)
 		}
 	})
 
 	t.Run("read error", func(t *testing.T) {
-		_, err := RunShow(t.Context(), Deps{FileReader: stubReader{err: errors.New("boom")}}, ShowOptions{Path: "file.txt"})
+		_, err := RunShow(context.Background(), Deps{FileReader: stubReader{err: errors.New("boom")}}, ShowOptions{Path: "file.txt"})
 		if err == nil || !strings.Contains(err.Error(), "read file") {
 			t.Fatalf("expected read file error, got %v", err)
 		}
 	})
 
 	t.Run("unknown file type", func(t *testing.T) {
-		_, err := RunShow(t.Context(), Deps{FileReader: stubReader{data: []byte("ok")}}, ShowOptions{Path: "file.txt", FileType: "nope-not-a-lexer"})
+		_, err := RunShow(context.Background(), Deps{FileReader: stubReader{data: []byte("ok")}}, ShowOptions{Path: "file.txt", FileType: "nope-not-a-lexer"})
 		if err == nil || !strings.Contains(err.Error(), "highlight content") {
 			t.Fatalf("expected highlight content error, got %v", err)
 		}
 	})
 
 	t.Run("unknown theme", func(t *testing.T) {
-		_, err := RunShow(t.Context(), Deps{FileReader: stubReader{data: []byte("ok")}}, ShowOptions{Path: "file.txt", Theme: "nope-not-a-theme"})
+		_, err := RunShow(context.Background(), Deps{FileReader: stubReader{data: []byte("ok")}}, ShowOptions{Path: "file.txt", Theme: "nope-not-a-theme"})
 		if err == nil || !strings.Contains(err.Error(), "unknown theme") {
 			t.Fatalf("expected unknown theme error, got %v", err)
 		}
@@ -58,7 +59,7 @@ func TestRunShowDebug(t *testing.T) {
 	t.Setenv("LC_CTYPE", "C")
 	t.Setenv("LANG", "C")
 
-	result, err := RunShow(t.Context(), Deps{FileReader: stubReader{data: []byte("hello\n")}}, ShowOptions{Path: "main.go", Debug: true})
+	result, err := RunShow(context.Background(), Deps{FileReader: stubReader{data: []byte("hello\n")}}, ShowOptions{Path: "main.go", Debug: true})
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
