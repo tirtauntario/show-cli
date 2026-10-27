@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/urfave/cli/v2"
+	"golang.org/x/term"
 
 	"github.com/tirtauntario/show-cli/internal/show"
 )
@@ -23,10 +25,36 @@ type CLI struct {
 	info   BuildInfo
 	out    io.Writer
 	errOut io.Writer
+	// isTerminal reports whether w is a terminal. Tests replace it.
+	isTerminal func(w io.Writer) bool
 }
 
 func New(deps show.Deps, info BuildInfo, out io.Writer, errOut io.Writer) *CLI {
-	return &CLI{deps: deps, info: info, out: out, errOut: errOut}
+	return &CLI{deps: deps, info: info, out: out, errOut: errOut, isTerminal: isTerminal}
+}
+
+// isTerminal reports whether w is a file descriptor attached to a terminal.
+func isTerminal(w io.Writer) bool {
+	f, ok := w.(interface{ Fd() uintptr })
+	return ok && term.IsTerminal(int(f.Fd()))
+}
+
+// useColor resolves --color. auto colors only when stdout is a terminal and
+// NO_COLOR is unset or empty (https://no-color.org).
+func (c *CLI) useColor(mode string) (bool, error) {
+	switch strings.ToLower(mode) {
+	case "always":
+		return true, nil
+	case "never":
+		return false, nil
+	case "auto", "":
+		if os.Getenv("NO_COLOR") != "" {
+			return false, nil
+		}
+		return c.isTerminal(c.out), nil
+	default:
+		return false, fmt.Errorf("invalid --color value %q (want auto, always or never)", mode)
+	}
 }
 
 func (c *CLI) Run(args []string) error {
@@ -58,6 +86,11 @@ func (c *CLI) Run(args []string) error {
 				Name:    "v",
 				Aliases: []string{"version"},
 				Usage:   "print version",
+			},
+			&cli.StringFlag{
+				Name:  "color",
+				Value: "auto",
+				Usage: "when to use color: auto, always or never",
 			},
 			&cli.IntFlag{
 				Name:  "tab-width",
@@ -131,6 +164,11 @@ func (c *CLI) runShow(ctx *cli.Context) error {
 	opts.Theme = ctx.String("theme")
 	opts.Debug = ctx.Bool("debug") || ctx.Bool("d")
 	opts.TabWidth = ctx.Int("tab-width")
+	color, err := c.useColor(ctx.String("color"))
+	if err != nil {
+		return err
+	}
+	opts.Color = color
 	result, err := show.RunShow(context.Background(), c.deps, opts)
 	if err != nil {
 		return err
@@ -168,7 +206,7 @@ func normalizeArgs(args []string) []string {
 
 func flagNeedsValue(arg string) bool {
 	switch arg {
-	case "-t", "--filetype", "--install-completion", "--theme", "--tab-width":
+	case "-t", "--filetype", "--install-completion", "--theme", "--tab-width", "--color":
 		return true
 	default:
 		return false
@@ -224,7 +262,7 @@ func bashCompletion() string {
 _show() {
   local cur opts
   cur="${COMP_WORDS[COMP_CWORD]}"
-  opts="-h --help -v --version -d --debug -t --filetype --tab-width --theme --list-file-types --list-themes --install-completion"
+  opts="-h --help -v --version -d --debug -t --filetype --color --tab-width --theme --list-file-types --list-themes --install-completion"
   if [[ "$cur" == -* ]]; then
     COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
     return 0
@@ -247,6 +285,7 @@ _arguments \
   '--debug[print debug metadata]' \
   '-t[force syntax highlighting file type]:type:' \
   '--filetype[force syntax highlighting file type]:type:' \
+  '--color[when to use color]:when:(auto always never)' \
   '--tab-width[expand tabs to this many columns]:width:' \
   '--theme[set syntax highlighting theme]:theme:' \
   '--list-file-types[print supported file type aliases]' \
@@ -266,6 +305,7 @@ complete -c show -s d -d "print debug metadata"
 complete -c show -l debug -d "print debug metadata"
 complete -c show -s t -d "force syntax highlighting file type"
 complete -c show -l filetype -d "force syntax highlighting file type"
+complete -c show -l color -d "when to use color" -xa "auto always never"
 complete -c show -l tab-width -x -d "expand tabs to this many columns"
 complete -c show -l theme -d "set syntax highlighting theme"
 complete -c show -l list-file-types -d "print supported file type aliases"

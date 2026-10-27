@@ -10,6 +10,14 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 )
 
+// checkFileType reports an error if fileType is set but names no lexer.
+func checkFileType(fileType string) error {
+	if fileType != "" && lexers.Get(fileType) == nil {
+		return fmt.Errorf("unknown file type: %s", fileType)
+	}
+	return nil
+}
+
 func highlightContent(path string, content string, fileType string, theme string) (string, error) {
 	var lexer chroma.Lexer
 	if fileType != "" {

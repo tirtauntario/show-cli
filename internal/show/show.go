@@ -33,6 +33,9 @@ type ShowOptions struct {
 	// TabWidth expands tabs to stops every TabWidth columns, counted from the
 	// start of each line of the file. 0 keeps tabs as they are.
 	TabWidth int
+	// Color turns on syntax highlighting and colored line numbers. When it is
+	// false the output contains no ANSI escape sequences.
+	Color bool
 }
 
 type ShowResult struct {
@@ -59,12 +62,16 @@ func RunShow(ctx context.Context, deps Deps, opts ShowOptions) (ShowResult, erro
 	}
 
 	content := expandTabs(string(data), opts.TabWidth)
-	highlighted, err := highlightContent(opts.Path, content, opts.FileType, opts.Theme)
+	if opts.Color {
+		content, err = highlightContent(opts.Path, content, opts.FileType, opts.Theme)
+	} else {
+		err = checkFileType(opts.FileType)
+	}
 	if err != nil {
 		return ShowResult{}, fmt.Errorf("highlight content: %w", err)
 	}
 
-	content = addLineNumbers(highlighted)
+	content = addLineNumbers(content, opts.Color)
 	if opts.Debug {
 		content = wrapWithDebugFileType(opts.Path, data, content)
 	}
@@ -121,7 +128,7 @@ func expandTabs(input string, width int) string {
 	return b.String()
 }
 
-func addLineNumbers(input string) string {
+func addLineNumbers(input string, useColor bool) string {
 	if input == "" {
 		return ""
 	}
@@ -134,7 +141,6 @@ func addLineNumbers(input string) string {
 	sep := lineSeparator()
 	reset := "\x1b[0m"
 	white := "\x1b[37m"
-	useColor := !noColor()
 	for {
 		line, err := reader.ReadString('\n')
 		if line != "" {
@@ -181,11 +187,6 @@ func isUTF8Env(key string) bool {
 	value := os.Getenv(key)
 	value = strings.ToLower(value)
 	return strings.Contains(value, "utf-8") || strings.Contains(value, "utf8")
-}
-
-func noColor() bool {
-	value, ok := os.LookupEnv("NO_COLOR")
-	return ok && value != ""
 }
 
 func lineNumberWidth(input string) int {

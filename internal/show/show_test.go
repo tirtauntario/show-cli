@@ -54,7 +54,6 @@ func TestRunShowErrors(t *testing.T) {
 }
 
 func TestRunShowDebug(t *testing.T) {
-	t.Setenv("NO_COLOR", "1")
 	t.Setenv("LC_ALL", "C")
 	t.Setenv("LC_CTYPE", "C")
 	t.Setenv("LANG", "C")
@@ -73,12 +72,11 @@ func TestRunShowDebug(t *testing.T) {
 }
 
 func TestAddLineNumbers(t *testing.T) {
-	t.Setenv("NO_COLOR", "1")
 	t.Setenv("LC_ALL", "C")
 	t.Setenv("LC_CTYPE", "C")
 	t.Setenv("LANG", "C")
 
-	out := addLineNumbers("first\nsecond\n")
+	out := addLineNumbers("first\nsecond\n", false)
 	if !strings.Contains(out, "1 | ") || !strings.Contains(out, "2 | ") {
 		t.Fatalf("expected line numbers, got %q", out)
 	}
@@ -115,22 +113,6 @@ func TestLineSeparator(t *testing.T) {
 	})
 }
 
-func TestNoColor(t *testing.T) {
-	t.Run("set", func(t *testing.T) {
-		t.Setenv("NO_COLOR", "1")
-		if !noColor() {
-			t.Fatal("expected noColor to be true")
-		}
-	})
-
-	t.Run("unset", func(t *testing.T) {
-		t.Setenv("NO_COLOR", "")
-		if noColor() {
-			t.Fatal("expected noColor to be false")
-		}
-	})
-}
-
 func TestExpandTabs(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -158,7 +140,6 @@ func TestExpandTabs(t *testing.T) {
 }
 
 func TestRunShowExpandsTabs(t *testing.T) {
-	t.Setenv("NO_COLOR", "1")
 	t.Setenv("LC_ALL", "C")
 	t.Setenv("LC_CTYPE", "C")
 	t.Setenv("LANG", "C")
@@ -175,5 +156,33 @@ func TestRunShowExpandsTabs(t *testing.T) {
 	_, err = RunShow(context.Background(), deps, ShowOptions{Path: "main.go", TabWidth: -1})
 	if err == nil || !strings.Contains(err.Error(), "invalid tab width") {
 		t.Fatalf("expected invalid tab width error, got %v", err)
+	}
+}
+
+func TestRunShowColor(t *testing.T) {
+	t.Setenv("LC_ALL", "C")
+	t.Setenv("LC_CTYPE", "C")
+	t.Setenv("LANG", "C")
+	deps := Deps{FileReader: stubReader{data: []byte("package main\n")}}
+
+	plain, err := RunShow(context.Background(), deps, ShowOptions{Path: "main.go"})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if got := string(plain.Content); got != "1 | package main\n" {
+		t.Fatalf("expected plain output, got %q", got)
+	}
+
+	colored, err := RunShow(context.Background(), deps, ShowOptions{Path: "main.go", Color: true})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if !strings.Contains(string(colored.Content), "\x1b[") {
+		t.Fatalf("expected ANSI output, got %q", colored.Content)
+	}
+
+	_, err = RunShow(context.Background(), deps, ShowOptions{Path: "main.go", FileType: "nope-not-a-lexer"})
+	if err == nil || !strings.Contains(err.Error(), "unknown file type") {
+		t.Fatalf("expected unknown file type error without color, got %v", err)
 	}
 }

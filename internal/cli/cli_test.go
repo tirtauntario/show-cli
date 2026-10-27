@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"errors"
+	"io"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -112,7 +114,6 @@ func TestRunListThemes(t *testing.T) {
 }
 
 func TestRunShow(t *testing.T) {
-	t.Setenv("NO_COLOR", "1")
 	t.Setenv("LC_ALL", "C")
 	t.Setenv("LC_CTYPE", "C")
 	t.Setenv("LANG", "C")
@@ -178,7 +179,6 @@ func TestRunShowUnknownFileType(t *testing.T) {
 }
 
 func TestRunShowTheme(t *testing.T) {
-	t.Setenv("NO_COLOR", "1")
 	t.Setenv("LC_ALL", "C")
 	t.Setenv("LC_CTYPE", "C")
 	t.Setenv("LANG", "C")
@@ -199,7 +199,6 @@ func TestRunShowTheme(t *testing.T) {
 var ansi = regexp.MustCompile("\x1b\\[[0-9;]*m")
 
 func TestRunShowTabWidth(t *testing.T) {
-	t.Setenv("NO_COLOR", "1")
 	t.Setenv("LC_ALL", "C")
 	t.Setenv("LC_CTYPE", "C")
 	t.Setenv("LANG", "C")
@@ -222,5 +221,70 @@ func TestRunShowTabWidth(t *testing.T) {
 	}
 	if got := run("test.txt", "--tab-width=0"); !strings.Contains(got, "\tx") {
 		t.Fatalf("expected raw tab, got %q", got)
+	}
+}
+
+func TestRunShowColor(t *testing.T) {
+	t.Setenv("LC_ALL", "C")
+	t.Setenv("LC_CTYPE", "C")
+	t.Setenv("LANG", "C")
+
+	tests := []struct {
+		name     string
+		args     []string
+		terminal bool
+		noColor  string
+		want     bool
+	}{
+		{"auto on terminal", nil, true, "", true},
+		{"auto not a terminal", nil, false, "", false},
+		{"auto with NO_COLOR", nil, true, "1", false},
+		{"auto with empty NO_COLOR", nil, true, "", true},
+		{"explicit auto", []string{"--color", "auto"}, true, "", true},
+		{"always not a terminal", []string{"--color", "always"}, false, "", true},
+		{"always with NO_COLOR", []string{"--color=always"}, false, "1", true},
+		{"never on terminal", []string{"--color", "never"}, true, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("NO_COLOR", tt.noColor)
+			var out, errOut bytes.Buffer
+			app := New(show.Deps{FileReader: stubFileReader{data: []byte("package main\n")}}, BuildInfo{}, &out, &errOut)
+			app.isTerminal = func(io.Writer) bool { return tt.terminal }
+
+			if err := app.Run(append([]string{"main.go"}, tt.args...)); err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			got := strings.Contains(out.String(), "\x1b[")
+			if got != tt.want {
+				t.Fatalf("color = %v, want %v; output %q", got, tt.want, out.String())
+			}
+			if !strings.Contains(ansi.ReplaceAllString(out.String(), ""), "1 | package main") {
+				t.Fatalf("expected numbered content, got %q", out.String())
+			}
+		})
+	}
+}
+
+func TestRunShowColorInvalid(t *testing.T) {
+	var out, errOut bytes.Buffer
+	app := New(show.Deps{FileReader: stubFileReader{data: []byte("ok")}}, BuildInfo{}, &out, &errOut)
+	err := app.Run([]string{"--color", "sometimes", "main.go"})
+	if err == nil || !strings.Contains(err.Error(), "invalid --color value") {
+		t.Fatalf("expected invalid color error, got %v", err)
+	}
+}
+
+func TestIsTerminal(t *testing.T) {
+	if isTerminal(&bytes.Buffer{}) {
+		t.Fatal("a buffer is not a terminal")
+	}
+	f, err := os.CreateTemp(t.TempDir(), "out")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = f.Close() }()
+	if isTerminal(f) {
+		t.Fatal("a regular file is not a terminal")
 	}
 }
