@@ -1,8 +1,11 @@
 package show
 
 import (
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/alecthomas/chroma/v2/lexers"
 )
 
 func TestDetectFileTypeFromExtension(t *testing.T) {
@@ -28,6 +31,14 @@ func TestSupportedFileTypes(t *testing.T) {
 		}
 		if name != strings.ToLower(name) {
 			t.Fatalf("expected lowercase type, got %q", name)
+		}
+		if lexers.Get(name) == nil {
+			t.Fatalf("listed type %q is not accepted by lexers.Get", name)
+		}
+	}
+	for _, want := range []string{"go", "golang", "python", "py", "yaml", "json", "bash", "rust"} {
+		if !slices.Contains(types, want) {
+			t.Fatalf("expected %q in supported file types", want)
 		}
 	}
 }

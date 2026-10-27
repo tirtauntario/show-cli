@@ -31,11 +31,11 @@ func New(deps show.Deps, info BuildInfo, out io.Writer, errOut io.Writer) *CLI {
 
 func (c *CLI) Run(args []string) error {
 	app := &cli.App{
-		Name:            "show",
-		Usage:           "display text file contents with syntax highlighting and line number",
-		Writer:          c.out,
-		ErrWriter:       c.errOut,
-		HideHelp:        true,
+		Name:      "show",
+		Usage:     "display text file contents with syntax highlighting and line numbers",
+		Writer:    c.out,
+		ErrWriter: c.errOut,
+		ArgsUsage: "<path>", HideHelp: true,
 		HideVersion:     true,
 		HideHelpCommand: true,
 		Flags: []cli.Flag{

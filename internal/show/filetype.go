@@ -23,20 +23,32 @@ func detectFileTypeFromExtension(path string) string {
 	return "unknown"
 }
 
+// SupportedFileTypes returns every value accepted by --filetype: all lexer
+// aliases plus lexer names that contain no spaces, lowercased and sorted.
 func SupportedFileTypes() []string {
-	canonical := make(map[string]struct{})
-	for _, name := range lexers.Names(false) {
-		canonical[strings.ToLower(name)] = struct{}{}
+	seen := make(map[string]struct{})
+	add := func(name string) {
+		name = strings.ToLower(name)
+		if name == "" || strings.ContainsAny(name, " \t") {
+			return
+		}
+		seen[name] = struct{}{}
 	}
-
-	var aliases []string
-	for _, name := range lexers.Names(true) {
-		lower := strings.ToLower(name)
-		if _, ok := canonical[lower]; ok {
+	for _, lexer := range lexers.GlobalLexerRegistry.Lexers {
+		config := lexer.Config()
+		if config == nil {
 			continue
 		}
-		aliases = append(aliases, lower)
+		add(config.Name)
+		for _, alias := range config.Aliases {
+			add(alias)
+		}
 	}
-	sort.Strings(aliases)
-	return aliases
+
+	types := make([]string, 0, len(seen))
+	for name := range seen {
+		types = append(types, name)
+	}
+	sort.Strings(types)
+	return types
 }
